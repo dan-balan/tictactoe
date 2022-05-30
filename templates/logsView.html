@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="#" type="image/x-icon">
+    <title>Logs View</title>
+    <!-- <link rel="stylesheet" href="../static/styles/styles.css"> -->
+    <link rel="stylesheet" href="../static/styles/styles-logs.css">
+    
+</head>
+
+<!-- logs area -->
+
+<!-- Greetings view -->
+  <div class="messaging background show" id="messagingBackground">
+    <div class="messaging-view show" id="messaging">
+        
+      <!-- messaging area header: info about connected players -->
+        <div class="messaging-header" id="messaging-header">
+          <div class="modal-header">
+            <h3 id="label">Game Arena</h3>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <!-- connected player -->
+
+          <div class="connected-players" id="connected_players">
+            <p>Connected: <span>player X</span>, <span>player O</span></p>
+          </div>
+        </div>
+      <!--  -->
+        <!-- <div class="horizontal-line"></div> -->
+        <!-- messages -->
+        <div class="msg" id="msg-area">
+          <!--  -->
+            <div class="message-in">
+              <div class="msg-container">
+                <div class="msg-content">
+                  Hello
+                </div>
+              </div>
+            </div>
+
+            <div class="message-in">
+              <div class="msg-container">
+                <div class="msg-content">
+                  Hello
+                </div>
+              </div>
+            </div>
+            
+            <div class="message-out">
+              <div class="msg-container">
+                <div class="msg-content">
+                  Hi
+                </div>
+              </div>
+            </div>
+
+            <div class="message-refer">
+              <div class="msg-container center">
+                <div class="msg-content refer">
+                  Hello
+                </div>
+              </div>
+            </div>
+
+        </div>
+        <!-- messages -->
+
+        <!-- send msg -->
+        <div class="logs message" id="log_msg">
+          <form class="messaging" id="send_msg" method="POST" action="#">
+            <input type=text id='message' placeholder="type message">
+            <button type="submit" id="send">Send</button>
+            </form>
+        </div>
+        <!-- send msg -->
+
+      </div> 
+  </div> 
+  <!-- Greetings view -->
+  
+  <!-- logs area -->
+
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.min.js"></script> -->
+    <!-- <script src="../static/scripts/script.js"></script> -->
+    <script>
+
+      // append newMsg to logs View
+      function addMsg(contText, msgPos, msgOriginator) {
+        aa = document.createElement('div')
+        aa.className = 'message-in'
+        
+        bb = document.createElement('div')
+        bb.className = msgPos
+        
+        cc = document.createElement('div')
+        cc.className = msgOriginator
+        
+        cc.innerText = contText
+
+        bb.appendChild(cc)
+        aa.appendChild(bb)
+
+        document.getElementById('msg-area').appendChild(aa)
+
+}
+    </script>
+</body>
+
+</html>

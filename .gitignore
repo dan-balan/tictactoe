@@ -1,0 +1,9 @@
+# Environments
+venv/
+__pycache__/
+
+# Flask stuff:
+instance/
+flask_session/
+
+.vscode/
