@@ -12,6 +12,8 @@ d-_-b
 - HTML
 - CSS
 
+*HTML/CSS/JS elments from Web Dev Simplified [Tic Tac Toe project](https://github.com/WebDevSimplified/JavaScript-Tic-Tac-Toe)*
+
 Server Client communication based on [Socket.IO](https://socket.io/docs/v4/) protocol
 ![Socket.IO](https://socket.io/images/bidirectional-communication2.png)
 
@@ -41,3 +43,25 @@ On client `connect`:
         - gamePreparation
         - startGame (eventListener & handleClick for each 3x3 cells)
         - `emit` the move to the server & check win or draw
+
+
+
+Reproduce web application
+=========================
+
+One way to run this application: 
+- create a virtual environement;
+
+$ python -m venv [directory]
+
+- install the requirements in virtual environment;
+
+$  pip install -r requirements.txt
+
+- run `python app.py` or `flask run` and visit `http://localhost:5000` two separate browser tabs.
+
+$ python app.py
+
+or
+
+$ flask run
