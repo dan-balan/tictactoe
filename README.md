@@ -51,17 +51,19 @@ Reproduce web application
 
 One way to run this application: 
 - create a virtual environement;
-
-$ python -m venv [directory]
+```bash
+python -m venv [directory]
+```
 
 - install the requirements in virtual environment;
-
-$  pip install -r requirements.txt
-
+```bash
+pip install -r requirements.txt
+```
 - run `python app.py` or `flask run` and visit `http://localhost:5000` two separate browser tabs.
-
-$ python app.py
-
+```bash
+python app.py
+```
 or
-
+```bash
 $ flask run
+```

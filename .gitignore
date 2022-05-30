@@ -7,3 +7,5 @@ instance/
 flask_session/
 
 .vscode/
+
+.DS_Store
