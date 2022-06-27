@@ -40,7 +40,7 @@ On client `connect`:
 from flask import Flask, render_template, session, request
 # from flask_login import LoginManager, UserMixin
 # from flask_session import Session
-from flask_socketio import SocketIO, emit, join_room, disconnect
+from flask_socketio import SocketIO, emit, join_room, disconnect, leave_room
 
 from random import randint
 
@@ -52,13 +52,6 @@ app.config['SESSION_TYPE'] = 'filesystem'
 # socketio = SocketIO(app, manage_session=False)
 socketio = SocketIO(app)
 
-# class User(UserMixin, object):
-#     def __init__(self, id=None):
-#         self.id = id
-
-# @login.user_loader
-# def load_user(id):
-#     return User(id)
 
 
 @app.route('/tictactoe')
@@ -72,28 +65,67 @@ def tictactoe2():
 
 # ! game preparation
 
+class Player():
+    """
+    player modelisation
+
+    """
+    gameStart = False
+
+    def __init__(self, name, room):
+        self.name = name
+        self.room = room
+    
+    def set_game_mark(self, gameMark):
+        self.gameMark = gameMark
+
+    def start_game_intention(self, gameStart = True):
+        self.gameStart = gameStart
+
+    def get_game_intention(self):
+        return self.gameStart
+
+
+
+class GameRoom():
+    """
+    
+    modelisation of a game room
+    
+    """
+
+    onlineClients = []
+    gameRound = True
+
+
+    def __init__(self, roomName):
+        self.roomName = roomName
+    
+    def add_player(self, objPlayer):
+        self.onlineClients.append(objPlayer)
+    
+    def get_players_nbr(self):
+        return len(onlineClients)
+
+    def check_players_game_start(self):
+        for player in self.onlineClients:
+            if player.get_game_intention() == False:
+                self.gameRound = False
+                return
+
+    def get_rand_active_player(self):
+        return randint(0, 1)
+
+
 players = {0:'', 1:''}
 playersReadyForStart = {0:False, 1:False}
 started = True
 activePlayer = randint(0, 1)
 onlineClients = []
-gameRoom = 'newGame'
+gameRoom = 'room#2100'
 maxNumberOfPlayers = 2
 
 # ! server-client communication
-
-# ################# handler(1') #################
-# handler for player/client connect event
-# get info about the player form Greetings form
-# emited events: my_connection_trigger(msg)
-@socketio.event
-def my_connection_trigger(message):
-    session['username'] = message['username']
-    session['room'] = message['room']
-    print('my_event @ connection :[username:{}],[room: {}]'.format(session.get('username'), session.get('room')))
-    
-    emit('my_response',
-         {'data': message['data'], 'sessionId':session.get('sessionId')})
 
 # ################# handler(1') #################
 # handler for player/client connect event
@@ -115,21 +147,36 @@ def connect():
         # print local to server console
         print('Too many players tried to join!')
         # send to client
-        emit('tooManyPlayers', {'status':'tooManyPlayers'})
+        emit('tooManyPlayers', 'tooCrowdy')
+
         disconnect()
         return
     else:
-        sid = request.sid
-        onlineClients.append(sid)
-        socketio.server.enter_room(sid, room=gameRoom)
+        onlineClients.append(request.sid)
+        # socketio.server.enter_room(request.sid, room=gameRoom)
+        
+        emit('tooManyPlayers', 'go')
 
         # get payer id
-        playerId = onlineClients.index(sid, )
-        print('Online Clients: ', onlineClients,' Last cliend sessionId:', sid )
-        emit('clientId', playerId)
-        emit('connected-Players', [onlineClients], broadcast=True)
-        emit('status', {'clientsNbs': len(onlineClients), 'clientId': sid})
+        playerId = onlineClients.index(request.sid, )
+        print('Online Clients: ', onlineClients,' Last cliend sessionId:', request.sid )
+        # emit('user-connected')
 
+
+# ####### Server asyn
+@socketio.event
+def readyToStart(data):
+    global onlineClients
+    session['username'] = data['username']
+    session['room'] = data['room']
+    join_room(session['room'])
+    playerId = onlineClients.index(request.sid, )
+
+    emit('clientId', (playerId, session.get('room')))
+    emit('connected-Players', [onlineClients], to=session['room'])
+    emit('status', {'clientsNbs': len(onlineClients), 'clientId': request.sid})
+
+# #######
 
 # ! CHAT BETWEEN PLAYERS
 # Event handler for player/client message
@@ -138,7 +185,7 @@ def connect():
 @socketio.event
 def my_broadcast_event(message):
     emit('player message',
-         {'data': message['data'], 'sender':message['sender']}, broadcast=True)
+         {'data': message['data'], 'sender':message['sender']}, to=session['room'])
 
 # ! CHAT BETWEEN PLAYERS
 
@@ -158,9 +205,9 @@ def startGame(message):
             break
     # emit('start', (activePlayer, started))
     if (started):
-        emit('start', {'activePlayer':activePlayer, 'started': started}, broadcast=True)
+        emit('start', {'activePlayer':activePlayer, 'started': started}, to=session['room'])
     else:
-        emit('waiting second player start', broadcast=True)
+        emit('waiting second player start', to=session['room'])
 
 # ################# handler(3) #################
 # start the game when 2 players pressed the Start button
@@ -175,7 +222,7 @@ def turn(data):
 
     # ! TODO set the fields
     # notify all clients that turn happend and over the next active id
-    emit('turn', {'recentPlayer':data['player'], 'lastPos': data['pos'], 'next':activePlayer}, broadcast=True)
+    emit('turn', {'recentPlayer':data['player'], 'lastPos': data['pos'], 'next':activePlayer}, to=session['room'])
 
 # ################# handler(3.1) #################
 # information about game status

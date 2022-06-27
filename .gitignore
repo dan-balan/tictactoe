@@ -9,3 +9,4 @@ flask_session/
 .vscode/
 
 .DS_Store
+static/scripts/script-bak.js

@@ -34,7 +34,7 @@ On client `connect`:
 > Steps
 - `connect` event generated when Client connects to the server
     - Server side: 
-        - readyForGameCheck
+        - enterRoomCheck
         - gamePreparation
         - `emit` the information to the client (clientId, startGame, activeId)
 
@@ -59,11 +59,11 @@ python -m venv [directory]
 ```bash
 pip install -r requirements.txt
 ```
-- run `python app.py` or `flask run` and visit `http://localhost:5000` two separate browser tabs.
+- run `python app.py` or `flask run` and visit `http://localhost:5000` in two separate browser tabs.
 ```bash
 python app.py
 ```
 or
 ```bash
-$ flask run
+flask run
 ```
