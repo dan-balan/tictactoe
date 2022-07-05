@@ -28,35 +28,54 @@ var socket = null
 joinButton.addEventListener('click', async function(event) {
   event.preventDefault();
   
-  const result = await roomAvalability(); 
-  if (playerName.value == '' || roomName.value == '') {
-    setTimeout(() => {
-      alert('Please fill out Room Name and Player Name fields!');
-    }, "400")  
-    return;
+  const connectionEstablished = await connectUser();
+  let result;
+  if (connectionEstablished) {
+    if (playerName.value == '' || roomName.value == '') {
+      setTimeout(() => {
+        alert('Please fill out Room Name and Player Name fields!');
+      }, "700")  
+      return;
+    } else {
+      result = await roomAvalability(); 
+    };
   };
 
+  
   if (result == 'tooCrowdy'){
     // disconnect the socket
     socket.disconnect();
     alert('too many players in this Gaming Room!');
     return;
   } else {
-    socket.emit('readyToStart', { username: playerName.value, room : roomName.value});
+    socket.emit('readyToStart');
 
     userConnectedHandlers();
     document.getElementById('greetingsBackground').classList.remove('show');
   }; 
 });
 
-function roomAvalability() {
+function connectUser() {
   return new Promise(function (resolve, reject) {
     socket = io()
+    socket.on('connection-established', result => {
+      socket.off('connection-established');
+      resolve(result);
+    });
+    setTimeout(reject, "700");
+  });
+};
+
+
+function roomAvalability() {
+  return new Promise(function (resolve, reject) {
+    socket.emit('check-game-room', { username: playerName.value, room : roomName.value});
+    
     socket.on('tooManyPlayers', result => {
       socket.off('tooManyPlayers');
       resolve(result);
     });
-    setTimeout(reject, 400);
+    setTimeout(reject, "700");
   });
 };
 
@@ -79,11 +98,20 @@ function userConnectedHandlers() {
   socket.on('connected-Players', getConnectedPlayers);
 
   // hadler (1.3): Event handler for server sent data
-  socket.on('status', function(msg) {  
-    console.log (`Clog: Last joined: ${msg['clientId']} || Clients Nbr.:${msg['clientsNbs']}`);
+  socket.on('status', function(msg) {
+    console.log (`Last joined: ${msg['clientId']} || Clients Nbr.:${msg['clientsNbs']}`);
     
-    let txtmsg = `Last joined: ${msg['clientId']}. clients connected: ${msg['clientsNbs']}`;
-    addMsg(txtmsg, 'msg-container center', 'msg-content refer');
+    let servermsg = `Last joined: ${msg['clientId']}. Players connected: ${msg['clientsNbs']}`;
+    addMsg(servermsg, 'msg-container center', 'msg-content refer');
+
+  });
+
+    // hadler (1.3): Event handler for server sent data
+  socket.on('disconnect-status', function(msg) {
+    console.log (`Player: ${msg['clientId']} left the room. || Clients Nbr.:${msg['clientsNbs']}`);
+      
+    let servermsg = `Player ${msg['clientId']} left the room. Players connected: ${msg['clientsNbs']}`;
+    addMsg(servermsg, 'msg-container center', 'msg-content refer');
   });
 
   // handler(1c): Event handler for server sent data <player message>
@@ -279,7 +307,7 @@ function getConnectedPlayers(players) {
       connectedPlayers.push(players[0][i]);
     };
     console.log(connectedPlayers);
-    connectedContainer.innerText = connectedPlayers;
+    connectedContainer.innerText = `Online: ${connectedPlayers}`;
 };
 
 });

@@ -37,6 +37,7 @@ On client `connect`:
 
 """
 
+from oophelpers import *
 from flask import Flask, render_template, session, request
 # from flask_login import LoginManager, UserMixin
 # from flask_session import Session
@@ -63,67 +64,16 @@ def tictactoe2():
     return render_template('tictactoe.html')
 
 
-# ! game preparation
+activeGamingRooms = []
+connectetToPortalUsers = []
 
-class Player():
-    """
-    player modelisation
-
-    """
-    gameStart = False
-
-    def __init__(self, name, room):
-        self.name = name
-        self.room = room
-    
-    def set_game_mark(self, gameMark):
-        self.gameMark = gameMark
-
-    def start_game_intention(self, gameStart = True):
-        self.gameStart = gameStart
-
-    def get_game_intention(self):
-        return self.gameStart
-
-
-
-class GameRoom():
-    """
-    
-    modelisation of a game room
-    
-    """
-
-    onlineClients = []
-    gameRound = True
-
-
-    def __init__(self, roomName):
-        self.roomName = roomName
-    
-    def add_player(self, objPlayer):
-        self.onlineClients.append(objPlayer)
-    
-    def get_players_nbr(self):
-        return len(onlineClients)
-
-    def check_players_game_start(self):
-        for player in self.onlineClients:
-            if player.get_game_intention() == False:
-                self.gameRound = False
-                return
-
-    def get_rand_active_player(self):
-        return randint(0, 1)
-
-
-players = {0:'', 1:''}
-playersReadyForStart = {0:False, 1:False}
-started = True
-activePlayer = randint(0, 1)
-onlineClients = []
-gameRoom = 'room#2100'
-maxNumberOfPlayers = 2
+# players = {0:'', 1:''}
+# playersReadyForStart = {0:False, 1:False}
+# started = True
+# activePlayer = randint(0, 1)
+# onlineClients = []
+# gameRoom = 'room#2100'
+# maxNumberOfPlayers = 2
 
 # ! server-client communication
 
@@ -134,47 +84,68 @@ maxNumberOfPlayers = 2
 def connect():
     """
 
-    client connects to the server -> connect event generated
-    if more than 2 clients in the gaming room: socket disconnect;
-    else join gamming room;
-    server emit the clientId;
-
     """
-    global onlineClients
+    global connectetToPortalUsers
+    player = Player(request.sid)
+    connectetToPortalUsers.append(player)
     
-    # disconnect if 2 clients connected
-    if len(onlineClients)>= maxNumberOfPlayers:
-        # print local to server console
-        print('Too many players tried to join!')
-        # send to client
-        emit('tooManyPlayers', 'tooCrowdy')
+    emit('connection-established', 'go', to=request.sid)
 
-        disconnect()
-        return
-    else:
-        onlineClients.append(request.sid)
-        # socketio.server.enter_room(request.sid, room=gameRoom)
+
+@socketio.on('check-game-room')
+def checkGameRoom(data):
+    global onlineClients
+    global connectetToPortalUsers
+    global activeGamingRooms
+    # user index
+    userIdx = getPlayerIdx(connectetToPortalUsers, request.sid)
+    if userIdx is not None:
+        connectetToPortalUsers[userIdx].name = data['username']
+        connectetToPortalUsers[userIdx].requestedGameRoom = data['room']
+    
+    # check if room exists in activeGamingRooms
+    roomIdx = getRoomIdx(activeGamingRooms, data['room'])
+    # if room not existing
+    if roomIdx is None:
+        room = GameRoom(data['room'])
+        room.add_player(connectetToPortalUsers[userIdx])
+        activeGamingRooms.append(room)
         
-        emit('tooManyPlayers', 'go')
+        # join socketIO gameroom
+        join_room( data['room'])
+        emit('tooManyPlayers', 'go', to=request.sid)
 
-        # get payer id
-        playerId = onlineClients.index(request.sid, )
-        print('Online Clients: ', onlineClients,' Last cliend sessionId:', request.sid )
-        # emit('user-connected')
+    else:
+        if activeGamingRooms[roomIdx].roomAvailable():
+            activeGamingRooms[roomIdx].add_player(connectetToPortalUsers[userIdx])
+            
+            join_room( data['room'])
+            emit('tooManyPlayers', 'go', to=request.sid)
+        else:
+            # print local to server console
+            print('Too many players tried to join!')
+            # send to client
+            
+            emit('tooManyPlayers', 'tooCrowdy', to=request.sid)
+            disconnect()
+            return
+    
+    session['username'] = data['username']
+    session['room'] = data['room']
 
 
 # ####### Server asyn
 @socketio.event
-def readyToStart(data):
-    global onlineClients
-    session['username'] = data['username']
-    session['room'] = data['room']
-    join_room(session['room'])
-    playerId = onlineClients.index(request.sid, )
-
+def readyToStart():
+    global activeGamingRooms
+    
+    roomIdx = getRoomIdx(activeGamingRooms, session['room'])
+    playerId = activeGamingRooms[roomIdx].getPlayerIdx(request.sid)
+    onlineClients = activeGamingRooms[roomIdx].getClientsInRoom('byName')
+    
     emit('clientId', (playerId, session.get('room')))
     emit('connected-Players', [onlineClients], to=session['room'])
-    emit('status', {'clientsNbs': len(onlineClients), 'clientId': request.sid})
+    emit('status', {'clientsNbs': len(onlineClients), 'clientId': request.sid}, to=session['room'])
 
 # #######
 
@@ -194,16 +165,15 @@ def my_broadcast_event(message):
 # emited events: start(msg) OR <waiting second player start>
 @socketio.event
 def startGame(message):
-    global activePlayer
-    global started
-    started = True
-    playersReadyForStart[message['clientId']]= True
-    print(playersReadyForStart)
-    for k, v in playersReadyForStart.items():
-        if v == False:
-            started = False
-            break
-    # emit('start', (activePlayer, started))
+    global activeGamingRooms
+    global connectetToPortalUsers
+    userIdx = getPlayerIdx(connectetToPortalUsers, request.sid)
+    roomIdx = getRoomIdx(activeGamingRooms, session['room'])
+
+    connectetToPortalUsers[userIdx].start_game_intention()
+    started = activeGamingRooms[roomIdx].get_ready_for_game()
+
+    activePlayer = activeGamingRooms[roomIdx].get_rand_active_player()
     if (started):
         emit('start', {'activePlayer':activePlayer, 'started': started}, to=session['room'])
     else:
@@ -214,11 +184,17 @@ def startGame(message):
 # emited events: turn(msg)
 @socketio.on('turn')
 def turn(data):
-    global activePlayer
+    global activeGamingRooms
+    roomIdx = getRoomIdx(activeGamingRooms, session['room'])
+
+    activePlayer = activeGamingRooms[roomIdx].get_swap_player()
+
+
+    # global activePlayer
     print('turn by {}: position {}'.format(data['player'], data['pos']))
-    
+      
     # swap activePlayer
-    activePlayer = int(not(bool(activePlayer)))
+    # activePlayer = int(not(bool(activePlayer)))
 
     # ! TODO set the fields
     # notify all clients that turn happend and over the next active id
@@ -228,35 +204,57 @@ def turn(data):
 # information about game status
 @socketio.on('game_status')
 def game_status(msg):
-    global playersReadyForStart
-    playersReadyForStart = {0:False, 1:False}
-    activePlayer = randint(0, 1)
+    
+    # get status for restart game
+    global activeGamingRooms
+    roomIdx = getRoomIdx(activeGamingRooms, session['room'])
+    activeGamingRooms[roomIdx].startRound()
+    
     print(msg['status'])
 
 
-
-# TODO: add socket id to player obj
-def joinPlayer(sid, clients):
-    for player in players:
-        currentPlayer = player[player]
-        if currentPlayer == "":
-            players[player]= sid
-    if sid not in onlineClients:
-        onlineClients.append(sid)
-    return
-
+# get key by value from a dict
 def getKeybyValue(obj, value):
     key = [k for k, v in obj.items() if v == value]
     return key
 
+# get player's index from all players list
+def getPlayerIdx(obj, sid):
+    idx = 0
+    for player in obj:
+        if player.id == sid:
+            return idx
+        idx +=1
+
+# get room's index from active rooms list
+def getRoomIdx(obj, roomName):
+    idx = 0
+    for player in obj:
+        if player.name == roomName:
+            return idx
+        idx +=1
+
 @socketio.event
 def disconnect():
-    global onlineClients
-    sid = request.sid
-    if sid in onlineClients:
-        onlineClients.remove(sid)
-    print("client with sid: {} disconnected".format(sid))
-    emit('status', {'clients': len(onlineClients)})
+    global activeGamingRooms
+    global connectetToPortalUsers
+    userIdx = getPlayerIdx(connectetToPortalUsers, request.sid)             # user position in connectedToPortalUsers
+    roomIdx = getRoomIdx(activeGamingRooms, session['room'])                # active room of the user
+    userIdxInRoom = activeGamingRooms[roomIdx].getPlayerIdx(request.sid)    # user index in active room
+    
+    del activeGamingRooms[roomIdx].onlineClients[userIdxInRoom]             # delete the user from active room
+    del connectetToPortalUsers[userIdx]                                     # delete user from connectedToPortalUsers
+
+    onlineClients = activeGamingRooms[roomIdx].get_players_nbr()
+    print("client with sid: {} disconnected".format(request.sid))
+
+    if onlineClients == 0:
+        roomName = activeGamingRooms[roomIdx].name
+        del activeGamingRooms[roomIdx]
+        print ('room: {} closed'.format(roomName))
+    else:
+        # emit('status', {'clients': onlineClients}, to=session['room'])
+        emit('disconnect-status', {'clientsNbs': onlineClients, 'clientId': request.sid}, to=session['room'])
 
 
 if __name__ == '__main__':
