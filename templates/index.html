@@ -5,8 +5,9 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="#" type="image/x-icon">
+    <link rel="shortcut icon" href="/static/assets/favicon.ico" type="image/x-icon">
     <title>Multiplayer Tic Tac Toe</title>
+    <base href="../">
     <link rel="stylesheet" href="../static/styles/styles.css">
     <link rel="stylesheet" href="../static/styles/styles-design.css">
     <link rel="stylesheet" href="../static/styles/styles-logs.css">
@@ -40,7 +41,7 @@
               <label for="playerName">Enter your username</label>
               <input type=text id="playerName" placeholder="Player Name" required="required">
               
-              <button id="joinRoom">Join room</button>
+              <button type="button" id="joinRoom">Join room</button>
             </form>
           </div>
       </div>
@@ -130,7 +131,7 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.min.js"></script>
-  <script type="module" src="../static/scripts/main.js"></script>
+  <script type="module" src="./static/scripts/main.js"></script>
     
 </body>
 

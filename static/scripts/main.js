@@ -1,20 +1,21 @@
-import { winningMessageElement,
-  winningMessageTextElement,
-  WINNING_COMBINATIONS,
-  board,
-  startGameButton,   
-  roomName,          
-  playerName,        
-  connectedContainer,
-  cellElements,      
-  restartButton,     
-  gameRoomTitle,    
-  joinButton,    
-  sendButton,       
-  X_CLASS,       
-  CIRCLE_CLASS,      
-  } from './global-var.js';
 import { addMsg } from './helpers-chat.js';
+
+// ! VARIABLES DECLARATIONS
+const winningMessageElement = document.getElementById('winningMessage');
+const winningMessageTextElement = document.querySelector('[data-winning-message-text]');
+const board = document.getElementById('board');
+const startGameButton = document.getElementById('gameStart');
+const roomName = document.getElementById('gameRoom');
+const playerName = document.getElementById('playerName');
+const connectedContainer = document.getElementById('connected_players');
+const cellElements = document.querySelectorAll('[data-cell]');
+const restartButton = document.getElementById('restartButton');
+const gameRoomTitle = document.querySelector('.modal-header-title')
+const joinButton = document.getElementById('joinRoom')
+const sendButton = document.getElementById('send')
+const X_CLASS = 'x';
+const CIRCLE_CLASS = 'circle';
+const WINNING_COMBINATIONS = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 
 document.addEventListener("DOMContentLoaded", function(event) { 
 
@@ -122,8 +123,8 @@ function userConnectedHandlers() {
     activeId = data['activePlayer'];
     let readyToStart = data['started'];
       console.log('Active user: ', activeId );
-      alert("Game Started");
-    let txtmsg = `Active user (randomly): ${activeId}`;
+      // alert("Game Started");
+    let txtmsg = (clientId == activeId) ? `Randomly Active user: ${activeId} (your move)`: `Randomly Active user: ${activeId} (the opponent's move)` ;
     addMsg(txtmsg, 'msg-container center', 'msg-content refer');
     startGame();
   });

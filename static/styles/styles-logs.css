@@ -304,6 +304,7 @@ form.messaging {
   width: 412px;
   margin-bottom: 12px;
   justify-content: space-between;
+  position: relative;
 
 }
 

@@ -1,46 +1,6 @@
-"""
-
-# Online Multiplayer Tic-Tac-Toe
-
-d-_-b
-
-## Tools and technologies:
-Server side:
-- Python frameworks: Flask, Flask SocketIO
-Client Side:
-- JS (including SocketIO framework)
-- HTML
-- CSS
-
-## Game specific
-- 2 players (x|o);
-- player with 1st move;
-
-On client `connect`:
-
-|Client        |Server        |
-|:---         |---:           |
-|generated: `connect` event|received: `connect`|
-
-> Steps
-- `connect` event generated when Client connects to the server
-    - Server side: 
-        - readyForGameCheck
-        - gamePreparation
-        - `emit` the information to the client (clientId, startGame, activeId)
-
-- client `receive` clientId, startGame, activeId
-    - Client side: 
-        - gamePreparation
-        - startGame (eventListener & handleClick for each 3x3 cells)
-        - `emit` the move to the server & check win or draw
-
-"""
 
 from oophelpers import *
 from flask import Flask, render_template, session, request
-# from flask_login import LoginManager, UserMixin
-# from flask_session import Session
 from flask_socketio import SocketIO, emit, join_room, disconnect, leave_room
 
 from random import randint
@@ -48,32 +8,18 @@ from random import randint
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'top-secret!'
 app.config['SESSION_TYPE'] = 'filesystem'
-# login = LoginManager(app)
-# Session(app)
-# socketio = SocketIO(app, manage_session=False)
+
 socketio = SocketIO(app)
 
 
 
-@app.route('/tictactoe')
-def tictactoe():
-    return render_template('tictactoe.html')
-
 @app.route('/')
-def tictactoe2():
-    return render_template('tictactoe.html')
+def index():
+    return render_template('index.html')
 
 
 activeGamingRooms = []
 connectetToPortalUsers = []
-
-# players = {0:'', 1:''}
-# playersReadyForStart = {0:False, 1:False}
-# started = True
-# activePlayer = randint(0, 1)
-# onlineClients = []
-# gameRoom = 'room#2100'
-# maxNumberOfPlayers = 2
 
 # ! server-client communication
 
@@ -193,9 +139,6 @@ def turn(data):
     # global activePlayer
     print('turn by {}: position {}'.format(data['player'], data['pos']))
       
-    # swap activePlayer
-    # activePlayer = int(not(bool(activePlayer)))
-
     # ! TODO set the fields
     # notify all clients that turn happend and over the next active id
     emit('turn', {'recentPlayer':data['player'], 'lastPos': data['pos'], 'next':activePlayer}, to=session['room'])
@@ -239,22 +182,26 @@ def disconnect():
     global activeGamingRooms
     global connectetToPortalUsers
     userIdx = getPlayerIdx(connectetToPortalUsers, request.sid)             # user position in connectedToPortalUsers
-    roomIdx = getRoomIdx(activeGamingRooms, session['room'])                # active room of the user
-    userIdxInRoom = activeGamingRooms[roomIdx].getPlayerIdx(request.sid)    # user index in active room
     
-    del activeGamingRooms[roomIdx].onlineClients[userIdxInRoom]             # delete the user from active room
-    del connectetToPortalUsers[userIdx]                                     # delete user from connectedToPortalUsers
+    if session.get('room') is not None:
+    
+        roomIdx = getRoomIdx(activeGamingRooms, session['room'])                # active room of the user
+        userIdxInRoom = activeGamingRooms[roomIdx].getPlayerIdx(request.sid)    # user index in active room
+        
+        del activeGamingRooms[roomIdx].onlineClients[userIdxInRoom]             # delete the user from active room
+        del connectetToPortalUsers[userIdx]                                     # delete user from connectedToPortalUsers
 
-    onlineClients = activeGamingRooms[roomIdx].get_players_nbr()
-    print("client with sid: {} disconnected".format(request.sid))
+        onlineClients = activeGamingRooms[roomIdx].get_players_nbr()
+        print("client with sid: {} disconnected".format(request.sid))
 
-    if onlineClients == 0:
-        roomName = activeGamingRooms[roomIdx].name
-        del activeGamingRooms[roomIdx]
-        print ('room: {} closed'.format(roomName))
-    else:
-        # emit('status', {'clients': onlineClients}, to=session['room'])
-        emit('disconnect-status', {'clientsNbs': onlineClients, 'clientId': request.sid}, to=session['room'])
+        if onlineClients == 0:
+            roomName = activeGamingRooms[roomIdx].name
+            del activeGamingRooms[roomIdx]
+            print ('room: {} closed'.format(roomName))
+        else:
+            # emit('status', {'clients': onlineClients}, to=session['room'])
+            emit('disconnect-status', {'clientsNbs': onlineClients, 'clientId': request.sid}, to=session['room'])
+
 
 
 if __name__ == '__main__':
