@@ -104,3 +104,23 @@ or
 ```bash
 flask run
 ```
+
+#### Containerization using docker
+
+Build an Image from the Dockerfile
+```bash
+docker build -t <img_name> .        
+```
+```bash
+docker build -t flask-tictactoe .        
+```
+
+Run a container in background with and publish a container’s port(s) to the host
+```bash
+docker run -d -p <host_port>:<container_port> <image_name>    
+```
+```bash
+docker run -d -p 80:5000 flask-tictactoe  
+```
+
+Acces the container in browser using: `http://localhost` or `http://127.0.0.1`

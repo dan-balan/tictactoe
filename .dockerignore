@@ -1,0 +1,11 @@
+# markdown files
+*.md
+
+# docker files
+Dockerfile
+.dockerignore
+
+# python env folder
+venv
+
+.gitignore
